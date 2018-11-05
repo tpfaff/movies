@@ -1,12 +1,14 @@
-package com.example.tyler.movies.overview
+package com.example.tyler.movies.overview.model
 
 import com.example.tyler.movies.Api
-import com.example.tyler.movies.NowPlayingMoviesResponse
 import io.reactivex.Observable
-import retrofit2.Call
 
 class OverviewFragmentRepo {
     val api = Api()
+    var allMovies : List<MovieOverviewModel>? = null
+    var currentFilterList : List<MovieOverviewModel>? = null
+    var oldFilteredList: List<MovieOverviewModel>? = null
+
     fun getMovies(): Observable<NowPlayingMoviesResponse> {
         return api.getNowPlayingMovies()
     }

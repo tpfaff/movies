@@ -1,6 +1,6 @@
-package com.example.tyler.movies
+package com.example.tyler.movies.overview.model
 
-data class MovieModel(
+data class MovieOverviewModel(
     val adult: Boolean,
     val backdrop_path: String,
     val genre_ids: List<Int>,

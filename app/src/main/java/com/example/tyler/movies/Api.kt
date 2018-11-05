@@ -1,9 +1,11 @@
 package com.example.tyler.movies
 
+import com.example.tyler.movies.detail.model.MovieDetailModel
+import com.example.tyler.movies.overview.model.MovieOverviewModel
+import com.example.tyler.movies.overview.model.NowPlayingMoviesResponse
 import io.reactivex.Observable
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -40,5 +42,9 @@ class Api() {
 
     fun getNowPlayingMovies(): Observable<NowPlayingMoviesResponse> {
         return service.getNowPlayingMovies()
+    }
+    
+    fun getMovieDetails(movieId: String): Observable<MovieDetailModel> {
+        return service.getMovieDetails(movieId)
     }
 }

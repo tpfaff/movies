@@ -1,4 +1,4 @@
-package com.example.tyler.movies
+package com.example.tyler.movies.overview.model
 
 data class Dates(
     val maximum: String,
