@@ -35,7 +35,7 @@ class OverviewFragmentViewModel : ViewModel() {
             .subscribe({ response ->
                 val diffResult = DiffUtil.calculateDiff(MovieListDiffUtil(repo.allMovies, response.results))
                 repo.allMovies = response.results
-                uiStateChanged.onNext(UiState.ListReady(response.results, diffResult))
+                uiStateChanged.onNext(UiState.ListReady(response.results, diffResult, repo.currentSearchTerm))
             }, { error ->
                 uiStateChanged.onNext(UiState.Error())
                 Log.e(TAG, error.message, error)
@@ -43,6 +43,8 @@ class OverviewFragmentViewModel : ViewModel() {
     }
 
     fun filterMovies(title: String) {
+        //save the current search term so we can restore it upon rotation
+        repo.currentSearchTerm = title
         repo.allMovies?.let {
             repo.currentFilterList = it.filter { item ->
                 item.title.startsWith(title, ignoreCase = true) || title.isEmpty()
@@ -52,7 +54,7 @@ class OverviewFragmentViewModel : ViewModel() {
             }
             val diffResult = DiffUtil.calculateDiff(MovieListDiffUtil(repo.oldFilteredList, repo.currentFilterList!!))
             repo.oldFilteredList = repo.currentFilterList
-            uiStateChanged.onNext(UiState.ListReady(repo.currentFilterList!!, diffResult))
+            uiStateChanged.onNext(UiState.ListReady(repo.currentFilterList!!, diffResult, repo.currentSearchTerm))
         }
 
     }

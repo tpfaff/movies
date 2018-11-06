@@ -6,33 +6,34 @@ import android.util.Log
 import android.view.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.tyler.movies.Constants
-import com.example.tyler.movies.overview.model.MovieOverviewModel
-
 import com.example.tyler.movies.R
 import com.example.tyler.movies.detail.DetailFragment
+import com.example.tyler.movies.overview.model.MovieOverviewModel
 import com.example.tyler.movies.overview.model.UiState
 import com.example.tyler.movies.overview.viewmodel.OverviewFragmentViewModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.fragment_overview.*
 import kotlinx.android.synthetic.main.movie_item.view.*
-import androidx.core.view.MenuItemCompat
-import androidx.appcompat.widget.SearchView
 
 
 class OverviewFragment : Fragment() {
 
 
-    private lateinit var viewModel: OverviewFragmentViewModel
+    private val viewModel: OverviewFragmentViewModel by lazy {
+        ViewModelProviders.of(this).get(OverviewFragmentViewModel::class.java)
+    }
     private val allSubscriptions = CompositeDisposable()
     val adapter = OverviewAdapter()
-    
+    var menu: Menu? = null
+    var searchMenuItem: MenuItem? = null
+
     companion object {
         val TAG = OverviewFragment::class.java.simpleName
         fun newInstance(): OverviewFragment {
@@ -42,7 +43,6 @@ class OverviewFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(OverviewFragmentViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -54,9 +54,11 @@ class OverviewFragment : Fragment() {
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         super.onCreateOptionsMenu(menu, inflater)
-        inflater?.inflate(R.menu.search_menu,menu)
-        (menu?.findItem(R.id.search_view)?.actionView as SearchView)
-            .setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+        this.menu = menu
+        inflater?.inflate(R.menu.search_menu, menu)
+        searchMenuItem = menu?.findItem(R.id.search_view)
+        (searchMenuItem?.actionView as SearchView)
+            .setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String?): Boolean {
                     Log.d(TAG, "onQueryTextSubmit $query")
                     return true
@@ -69,12 +71,16 @@ class OverviewFragment : Fragment() {
                 }
             })
     }
-    
+
+    override fun onPrepareOptionsMenu(menu: Menu?) {
+        super.onPrepareOptionsMenu(menu)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recycler_view.layoutManager = GridLayoutManagerFixed(requireContext(), 2)
 
+        //listen for ui state changes from the viewmodel
         allSubscriptions.add(
             viewModel.uiStateChanged
                 .subscribeOn(AndroidSchedulers.mainThread())
@@ -82,22 +88,30 @@ class OverviewFragment : Fragment() {
                 .subscribe({ uiState ->
                     when (uiState) {
                         is UiState.Loading -> showLoadingView()
-                        is UiState.ListReady -> showList(uiState)
+                        is UiState.ListReady -> {
+                            showList(uiState)
+                            populateSearchText(uiState)
+                        }
+
                         is UiState.Error -> showErrorView()
                     }
                 }, { error ->
-                    Log.e(TAG, error.message, error)
+                    Log.e(TAG, "Couldn't get UiState", error)
                 })
         )
-        
-        viewModel.loadMovies()
+
+        // If just rotating, lets rely on the cached data instead of hitting the network again
+        // The BehaviorSubject in the OverviewFragmentViewModel will replay it's last emission ( the list to display )
+        if (savedInstanceState == null) {
+            viewModel.loadMovies()
+        }
     }
-    
+
     override fun onDestroyView() {
         super.onDestroyView()
         allSubscriptions.clear()
     }
-    
+
     private fun showLoadingView() {
         progress_bar.visibility = View.VISIBLE
     }
@@ -105,10 +119,21 @@ class OverviewFragment : Fragment() {
     private fun showList(uiState: UiState.ListReady) {
         progress_bar.visibility = View.GONE
         adapter.movies = uiState.movies
-        if(recycler_view.adapter == null){
+        if (recycler_view.adapter == null) {
             recycler_view.adapter = adapter
         }
         uiState.diffResult.dispatchUpdatesTo(adapter)
+    }
+
+    private fun populateSearchText(uiState: UiState.ListReady) {
+        if(uiState.currentSearch.isNullOrEmpty()) return
+        searchMenuItem?.let {
+            if (!it.isActionViewExpanded) {
+                val searchView = it.actionView as SearchView
+                    it.expandActionView()
+                    searchView.setQuery(uiState.currentSearch, false)
+            }
+        }
     }
 
     private fun showErrorView() {
@@ -118,9 +143,9 @@ class OverviewFragment : Fragment() {
 
     inner class OverviewAdapter() :
         RecyclerView.Adapter<OverviewAdapter.MovieViewHolder>() {
-        
+
         lateinit var movies: List<MovieOverviewModel>
-        
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
             return MovieViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.movie_item, parent, false))
         }
@@ -134,6 +159,7 @@ class OverviewFragment : Fragment() {
         }
 
         inner class MovieViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
+            //Using this as a cheap "viewmodel"
             private var _movieModel: MovieOverviewModel? = null
             var movieModel: MovieOverviewModel
                 get() = _movieModel!!
@@ -142,6 +168,7 @@ class OverviewFragment : Fragment() {
 
                     Glide.with(this@OverviewFragment.requireContext())
                         .load("${Constants.poster_url}${movieModel.poster_path}")
+                        .thumbnail(0.3f)
                         .into(view.movie_imageview)
 
                     view.setOnClickListener {

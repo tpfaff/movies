@@ -19,12 +19,12 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_detail.*
 
-/**
- * Copyright (c) 2018 Pandora Media, Inc.
- */
+
 class DetailFragment : Fragment() {
 
-    private lateinit var viewModel: DetailFragmentViewModel
+    private val viewModel: DetailFragmentViewModel by lazy {
+        ViewModelProviders.of(this).get(DetailFragmentViewModel::class.java)
+    }
     private val allSubscriptions = CompositeDisposable()
 
     companion object {
@@ -39,7 +39,6 @@ class DetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(DetailFragmentViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -48,8 +47,10 @@ class DetailFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_detail, container, false)
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        //listen for ui state changes from the viewmodel
         allSubscriptions.add(
             viewModel.uiStateChanged
                 .subscribeOn(Schedulers.io())
@@ -63,11 +64,15 @@ class DetailFragment : Fragment() {
                 }, { error -> Log.e(TAG, "Couldn't display movie details", error) })
         )
 
-        viewModel.getDetails(arguments!!.getString(EXTRA_ID)!!)
+         // If just rotating, lets rely on the cached data instead of hitting the network again
+        // The BehaviorSubject in the OverviewFragmentViewModel will replay it's last emission ( the list to display )
+        if (savedInstanceState == null) {
+            viewModel.getDetails(arguments!!.getString(EXTRA_ID)!!)
+        }
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroyView() {
+        super.onDestroyView()
         allSubscriptions.clear()
     }
 
