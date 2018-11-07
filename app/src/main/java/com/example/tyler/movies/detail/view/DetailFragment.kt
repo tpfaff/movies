@@ -1,4 +1,4 @@
-package com.example.tyler.movies.detail
+package com.example.tyler.movies.detail.view
 
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.bumptech.glide.Glide
+import com.bumptech.glide.RequestBuilder
 import com.example.tyler.movies.Constants
 import com.example.tyler.movies.R
 import com.example.tyler.movies.detail.viewmodel.DetailFragmentViewModel
@@ -87,8 +88,9 @@ class DetailFragment : Fragment() {
 
     private fun showDetails(uiState: UiState.DetailsReady) {
         progress_bar.visibility = View.GONE
-        Glide.with(this)
+        Glide.with(requireContext())
             .load("${Constants.poster_url}${uiState.details.backdrop_path}")
+            .thumbnail(0.3f)
             .into(header_imageview)
 
         title_textview.text = uiState.details.title

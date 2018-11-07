@@ -3,9 +3,6 @@ package com.example.tyler.movies.overview.view
 import androidx.recyclerview.widget.DiffUtil
 import com.example.tyler.movies.overview.model.MovieOverviewModel
 
-/**
- * Copyright (c) 2018 Pandora Media, Inc.
- */
 class MovieListDiffUtil(val old: List<MovieOverviewModel>?, val new: List<MovieOverviewModel>) : DiffUtil.Callback() {
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {

@@ -1,4 +1,4 @@
-package com.example.tyler.movies
+package com.example.tyler.movies.network
 
 import com.example.tyler.movies.detail.model.MovieDetailModel
 import com.example.tyler.movies.overview.model.NowPlayingMoviesResponse

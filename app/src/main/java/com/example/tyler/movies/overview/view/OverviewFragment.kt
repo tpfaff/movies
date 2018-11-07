@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.tyler.movies.Constants
 import com.example.tyler.movies.R
-import com.example.tyler.movies.detail.DetailFragment
+import com.example.tyler.movies.detail.view.DetailFragment
 import com.example.tyler.movies.overview.model.MovieOverviewModel
 import com.example.tyler.movies.overview.model.UiState
 import com.example.tyler.movies.overview.viewmodel.OverviewFragmentViewModel
@@ -39,10 +39,6 @@ class OverviewFragment : Fragment() {
         fun newInstance(): OverviewFragment {
             return OverviewFragment()
         }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -72,13 +68,9 @@ class OverviewFragment : Fragment() {
             })
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?) {
-        super.onPrepareOptionsMenu(menu)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        recycler_view.layoutManager = GridLayoutManagerFixed(requireContext(), 2)
+        recycler_view.layoutManager = GridLayoutManagerNoPredictiveAnimation(requireContext(), 2)
 
         //listen for ui state changes from the viewmodel
         allSubscriptions.add(
@@ -125,12 +117,15 @@ class OverviewFragment : Fragment() {
         uiState.diffResult.dispatchUpdatesTo(adapter)
     }
 
+    // Upon rotation, need to repopulate the search view text
     private fun populateSearchText(uiState: UiState.ListReady) {
         if(uiState.currentSearch.isNullOrEmpty()) return
         searchMenuItem?.let {
+            //If this is already expanded, there was no rotation, and there is no need to repopulate it.
             if (!it.isActionViewExpanded) {
                 val searchView = it.actionView as SearchView
                     it.expandActionView()
+                    //set the text but do not submit the query
                     searchView.setQuery(uiState.currentSearch, false)
             }
         }
